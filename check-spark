@@ -1,0 +1,2 @@
+#!/bin/bash
+PYTHONPATH="./third_party/boto-2.4.1.zip/boto-2.4.1:$PYTHONPATH" python check_spark.py $@
