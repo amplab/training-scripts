@@ -46,7 +46,7 @@ def parse_args():
       add_help_option=False)
   parser.add_option("-h", "--help", action="help",
                     help="Show this help message and exit")
-  parser.add_option("-s", "--slaves", type="int", default=1,
+  parser.add_option("-s", "--slaves", type="int", default=3,
       help="Number of slaves to launch (default: 1)")
   parser.add_option("-w", "--wait", type="int", default=120,
       help="Seconds to wait for nodes to start (default: 120)")
@@ -54,7 +54,7 @@ def parse_args():
       help="Key pair to use on instances")
   parser.add_option("-i", "--identity-file", 
       help="SSH private key file to use for logging into instances")
-  parser.add_option("-t", "--instance-type", default="m1.large",
+  parser.add_option("-t", "--instance-type", default="m2.xlarge",
       help="Type of instance to launch (default: m1.large). " +
            "WARNING: must be 64-bit; small instances won't work")
   parser.add_option("-m", "--master-instance-type", default="",
@@ -168,9 +168,9 @@ def is_active(instance):
 # Fails if there already instances running in the cluster's groups.
 def launch_cluster(conn, opts, cluster_name):
   print "Setting up security groups..."
-  master_group = get_or_make_group(conn, cluster_name + "-master")
-  slave_group = get_or_make_group(conn, cluster_name + "-slaves")
-  zoo_group = get_or_make_group(conn, cluster_name + "-zoo")
+  master_group = get_or_make_group(conn, "strata-master")
+  slave_group = get_or_make_group(conn, "strata-slaves")
+  zoo_group = get_or_make_group(conn, "strata-zoo")
   if master_group.rules == []: # Group was just now created
     master_group.authorize(src_group=master_group)
     master_group.authorize(src_group=slave_group)
@@ -681,8 +681,12 @@ def get_partition(total, num_partitions, current_partitions):
 
 def wait_for_spark_cluster(master_nodes, opts):
   err = check_spark_cluster(master_nodes, opts)
+  master = master_nodes[0].public_dns_name
   count = 0
   while err != 0 and count < 10:
+    # try to restart spark
+    ssh(master, opts, '/root/spark/bin/stop-all.sh')
+    ssh(master, opts, '/root/spark/bin/start-all.sh')
     time.sleep(5)
     err = check_spark_cluster(master_nodes, opts)
     count = count + 1
