@@ -28,6 +28,7 @@ import sys
 import tempfile
 import time
 import urllib2
+import json
 from optparse import OptionParser
 from sys import stderr
 import boto
@@ -395,9 +396,9 @@ def setup_cluster(conn, master_nodes, slave_nodes, zoo_nodes, opts, deploy_ssh_k
     ssh(master, opts, 'chmod 600 ~/.ssh/id_rsa')
 
   if opts.cluster_type == "mesos":
-    modules = ['ephemeral-hdfs', 'persistent-hdfs', 'mesos']
+    modules = ['ephemeral-hdfs', 'persistent-hdfs', 'mesos', 'training']
   elif opts.cluster_type == "standalone":
-    modules = ['ephemeral-hdfs', 'persistent-hdfs', 'spark-standalone']
+    modules = ['ephemeral-hdfs', 'persistent-hdfs', 'spark-standalone', 'training']
 
   if opts.ganglia:
     modules.append('ganglia')
@@ -418,20 +419,6 @@ def setup_spark_cluster(master, opts):
   ssh(master, opts, "chmod u+x spark-ec2/setup.sh")
   ssh(master, opts, "spark-ec2/setup.sh")
 
-def check_spark_cluster(master_nodes, opts):
-  master = master_nodes[0].public_dns_name
-  url = "http://" + master + ":8080?format=json"
-  try:
-    response = urllib2.urlopen(url)
-    if response.code != 200:
-      print "Spark master " + url + " returned " + str(response.code)
-      return -1
-    master_html = response.read()
-    return check_spark_json(master_html, opts)
-  except:
-    # If we get an exception, return error
-    return -1
-
 def check_spark_json(spark_json, opts):
   json_data = json.loads(spark_json)
   ## Find number of cpus from status page
@@ -448,6 +435,21 @@ def check_spark_json(spark_json, opts):
   if int(got_num_cpus) == int(expected_num_cpus):
     return 0
   else: 
+    return -1
+
+def check_spark_cluster(master_nodes, opts):
+  master = master_nodes[0].public_dns_name
+  url = "http://" + master + ":8080?format=json"
+  try:
+    response = urllib2.urlopen(url)
+    if response.code != 200:
+      print "Spark master " + url + " returned " + str(response.code)
+      return -1
+    master_html = response.read()
+    return check_spark_json(master_html, opts)
+  except NameError as e:
+    # If we get an exception, return error
+    print "Exception in opening the url " + url
     return -1
 
 def copy_ampcamp_data(master_nodes, opts):
@@ -552,13 +554,37 @@ def get_num_disks(instance_type):
                       % instance_type)
     return 1
 
+# Get number of CPUs available for a given EC2 instance type.
+def get_num_cpus(instance_type):
+  # From http://aws.amazon.com/ec2/instance-types/
+  cpus_by_instance = {
+    "m1.small":    1,
+    "m1.large":    2,
+    "m1.xlarge":   4,
+    "t1.micro":    1,
+    "c1.medium":   2,
+    "c1.xlarge":   8,
+    "m2.xlarge":   2,
+    "m2.2xlarge":  4,
+    "m2.4xlarge":  8,
+    "cc1.4xlarge": 8,
+    "cc2.8xlarge": 16,
+    "cg1.4xlarge": 8
+  }
+  if instance_type in cpus_by_instance:
+    return cpus_by_instance[instance_type]
+  else:
+    print >> stderr, ("WARNING: Don't know number of cpus on instance type %s; assuming 2"
+                      % instance_type)
+    return 2
 
 # Deploy the configuration file templates in a given local directory to
 # a cluster, filling in any template parameters with information about the
 # cluster (e.g. lists of masters and slaves). Files are only deployed to
 # the first master instance in the cluster, and we expect the setup
 # script to be run on that instance to copy them to other nodes.
-def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, zoo_nodes):
+def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, zoo_nodes,
+        modules):
   active_master = master_nodes[0].public_dns_name
 
   num_disks = get_num_disks(opts.instance_type)
@@ -590,7 +616,9 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, zoo_nodes):
     "cluster_url": cluster_url,
     "hdfs_data_dirs": hdfs_data_dirs,
     "mapred_local_dirs": mapred_local_dirs,
-    "spark_local_dirs": spark_local_dirs
+    "spark_local_dirs": spark_local_dirs,
+    "swap": str(opts.swap),
+    "modules": '\n'.join(modules)
   }
 
   # Create a temp directory in which we will place all the files to be
