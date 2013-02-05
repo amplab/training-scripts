@@ -369,15 +369,16 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
               elif instance.tags['type'] == 'zoo':
                 zoo_nodes.append(instance)
 
-  if master_nodes != [] and slave_nodes != []:
+  if any((master_nodes, slave_nodes, zoo_nodes)):
     print ("Found %d master(s), %d slaves, %d ZooKeeper nodes" %
            (len(master_nodes), len(slave_nodes), len(zoo_nodes)))
+  if (master_nodes != [] and slave_nodes != []) or not die_on_error:
     return (master_nodes, slave_nodes, zoo_nodes)
   else:
     if master_nodes == [] and slave_nodes != []:
-      print "ERROR: Could not find master in cluster " + cluster_name
+      print "ERROR: Could not find master in group " + cluster_name + "-master"
     elif master_nodes != [] and slave_nodes == []:
-      print "ERROR: Could not find slaves in cluster " + cluster_name
+      print "ERROR: Could not find slaves in group " + cluster_name + "-slaves"
     else:
       print "ERROR: Could not find any existing cluster"
     sys.exit(1)
