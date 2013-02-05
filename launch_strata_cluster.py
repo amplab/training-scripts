@@ -18,15 +18,15 @@ def parse_args():
       help="Number of clusters to launch (default: 1)")
   parser.add_option("-b", "--buckets", type="int", default=1,
       help="number of s3 bucket clones (default: 1)")
-  parser.add_option("--s3-stats-bucket", default="strata-data/wikistats_20090505-0",
+  parser.add_option("--s3-stats-bucket", default="ampcamp-data/wikistats_20090505-0",
       help="base-name of S3 bucket to copy strata data from. The bucket number " +
            " will be appended at the end to form the complete s3 key " +
-           " (default: strata-data/wikistats_20090505-0)")
+           " (default: ampcamp-data/wikistats_20090505-0)")
 
-  parser.add_option("--s3-small-bucket", default="strata-data/wikistats_20090505_restricted-0",
+  parser.add_option("--s3-small-bucket", default="ampcamp-data/wikistats_20090505_restricted-0",
       help="base-name of S3 bucket to copy restricted strata data from. The bucket number " +
            " will be appended at the end to form the complete s3 key " +
-           " (default: strata-data/wikistats_20090505_restricted-0)")
+           " (default: ampcamp-data/wikistats_20090505_restricted-0)")
 
   parser.add_option("-p", "--parallel", type="int", default=1,
       help="Number of launches that will happen in parallel (default: 1)")
