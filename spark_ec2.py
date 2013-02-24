@@ -101,6 +101,9 @@ def parse_args():
 
   parser.add_option("--s3-small-bucket", default="default",
       help="S3 bucket to copy ampcamp restricted data from (default: ampcamp-data/wikistats_20090505_restricted-01)")
+
+  parser.add_option("--s3-features-bucket", default="default",
+      help="S3 bucket to copy ampcamp features data from (default: ampcamp-data/wikistats_featurized-01)")
             
   (opts, args) = parser.parse_args()
   if len(args) != 2:
@@ -486,6 +489,10 @@ def copy_ampcamp_data(master_nodes, opts):
     s3_buckets_range = range(1, 9)
     opts.s3_small_bucket = "ampcamp-data/wikistats_20090505_restricted-0" + str(random.choice(s3_buckets_range))
 
+  if (opts.s3_features_bucket == "default"):
+    s3_buckets_range = range(1, 9)
+    opts.s3_features_bucket = "ampcamp-data/wikistats_featurized-0" + str(random.choice(s3_buckets_range))
+
   set_s3_keys_in_hdfs(master, opts, s3_access_key, s3_secret_key)
 
   ssh(master, opts, "/root/ephemeral-hdfs/bin/hadoop distcp " +
@@ -497,6 +504,10 @@ def copy_ampcamp_data(master_nodes, opts):
   ssh(master, opts, "/root/ephemeral-hdfs/bin/hadoop distcp " +
                     "s3n://" + opts.s3_small_bucket + " " +
                     "hdfs://`hostname`:9000/wikistats_20090505-07_restricted")
+
+  ssh(master, opts, "/root/ephemeral-hdfs/bin/hadoop distcp " +
+                    "s3n://" + opts.s3_features_bucket + " " +
+                    "hdfs://`hostname`:9000/wikistats_featurized")
 
 def set_s3_keys_in_hdfs(master, opts, s3_access_key, s3_secret_key):
   ssh(master, opts, "cd ephemeral-hdfs/conf; sed -i \"s/\!-- p/p/g\" core-site.xml")

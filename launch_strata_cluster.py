@@ -40,8 +40,10 @@ def parse_args():
       help="SSH private key file to use for logging into instances")
   parser.add_option("-a", "--ami", default="latest",
       help="Amazon Machine Image ID to use, or 'latest' to use latest " +
-           "availabe spark AMI, 'standalone' for the latest available " +
-           "standalone AMI (default: latest)")
+           "availabe strata AMI")
+  parser.add_option("-t", "--instance-type", default="m1.xlarge",
+      help="Type of instance to launch (default: m1.xlarge). " +
+           "WARNING: must be 64-bit; small instances won't work")
 
   parser.add_option("--action", default="launch",
       help="Action to be used while calling spark-ec2 (default: launch)") 
@@ -75,6 +77,8 @@ def main():
     args.append(opts.identity_file)
     args.append('-s')
     args.append(str(opts.slaves))
+    args.append('-t')
+    args.append(opts.instance_type)
     
     args.append('-z')
     args.append(availability_zones[cluster % len(availability_zones)])
