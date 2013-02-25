@@ -32,8 +32,8 @@ def parse_args():
       help="Number of launches that will happen in parallel (default: 1)")
 
   # spark-ec2 options that are just passed through
-  parser.add_option("-s", "--slaves", type="int", default=3,
-      help="Number of slaves to launch (default: 3)")
+  parser.add_option("-s", "--slaves", type="int", default=5,
+      help="Number of slaves to launch (default: 5)")
   parser.add_option("-k", "--key-pair",
       help="Key pair to use on instances")
   parser.add_option("-i", "--identity-file", 
