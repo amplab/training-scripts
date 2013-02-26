@@ -28,6 +28,9 @@ def parse_args():
            " will be appended at the end to form the complete s3 key " +
            " (default: ampcamp-data/wikistats_20090505_restricted-0)")
 
+  parser.add_option("--s3-features-bucket", default="ampcamp-data/wikistats_featurized-0",
+      help="base-name of S3 bucket to copy ampcamp features data from (default: ampcamp-data/wikistats_featurized-01)")
+
   parser.add_option("-p", "--parallel", type="int", default=1,
       help="Number of launches that will happen in parallel (default: 1)")
 
@@ -87,6 +90,8 @@ def main():
     args.append(opts.s3_stats_bucket + str(s3_buckets[cluster%len(s3_buckets)]))
     args.append('--s3-small-bucket')
     args.append(opts.s3_small_bucket + str(s3_buckets[cluster%len(s3_buckets)]))
+    args.append('--s3-features-bucket')
+    args.append(opts.s3_features_bucket + str(s3_buckets[cluster%len(s3_buckets)]))
     
     if opts.copy:
       args.append('--copy')
