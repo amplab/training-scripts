@@ -36,7 +36,7 @@ from boto.ec2.blockdevicemapping import BlockDeviceMapping, EBSBlockDeviceType
 from boto import ec2
 
 # A static URL from which to figure out the latest Mesos EC2 AMI
-LATEST_AMI_URL = "http://s3.amazonaws.com/ampcamp-amis/latest-strata"
+LATEST_AMI_URL = "http://s3.amazonaws.com/ampcamp-amis/latest-ampcamp3"
 
 
 # Configure and parse our command-line arguments
@@ -52,7 +52,7 @@ def parse_args():
       help="Seconds to wait for nodes to start (default: 120)")
   parser.add_option("-k", "--key-pair",
       help="Key pair to use on instances")
-  parser.add_option("-i", "--identity-file", 
+  parser.add_option("-i", "--identity-file",
       help="SSH private key file to use for logging into instances")
   parser.add_option("-t", "--instance-type", default="m1.xlarge",
       help="Type of instance to launch (default: m1.large). " +
@@ -68,7 +68,7 @@ def parse_args():
   parser.add_option("-a", "--ami", default="latest",
       help="Amazon Machine Image ID to use, or 'latest' to use latest " +
            "available AMI (default: latest)")
-  parser.add_option("-D", metavar="[ADDRESS:]PORT", dest="proxy_port", 
+  parser.add_option("-D", metavar="[ADDRESS:]PORT", dest="proxy_port",
       help="Use SSH dynamic port forwarding to create a SOCKS proxy at " +
             "the given local address (for use with login)")
   parser.add_option("--resume", action="store_true", default=False,
@@ -84,7 +84,8 @@ def parse_args():
       help="If specified, launch slaves as spot instances with the given " +
             "maximum price (in dollars)")
   parser.add_option("-c", "--cluster-type", default="standalone",
-      help="'mesos' for a mesos cluster, 'standalone' for a standalone spark cluster (default: mesos)")
+      help="'mesos' for a mesos cluster, 'standalone' for a standalone " +
+           "spark cluster (default: mesos)")
   parser.add_option("-g", "--ganglia", action="store_true", default=True,
       help="Setup ganglia monitoring for the cluster. NOTE: The ganglia " +
       "monitoring page will be publicly accessible")
@@ -94,30 +95,33 @@ def parse_args():
       help="When destroying a cluster, also destroy the security groups that were created")
 
   parser.add_option("--copy", action="store_true", default=False,
-      help="Copy AMP Camp data from S3 to ephemeral HDFS after launching the cluster (default: false)")
+      help="Copy AMP Camp data from S3 to ephemeral HDFS after " +
+           "launching the cluster (default: false)")
 
   parser.add_option("--s3-stats-bucket", default="default",
       help="S3 bucket to copy ampcamp data  from (default: ampcamp-data/wikistats_20090505-01)")
 
   parser.add_option("--s3-small-bucket", default="default",
-      help="S3 bucket to copy ampcamp restricted data from (default: ampcamp-data/wikistats_20090505_restricted-01)")
+      help="S3 bucket to copy ampcamp restricted data from " +
+           "(default: ampcamp-data/wikistats_20090505_restricted-01)")
 
   parser.add_option("--s3-features-bucket", default="default",
-      help="S3 bucket to copy ampcamp features data from (default: ampcamp-data/wikistats_featurized-01)")
-            
+      help="S3 bucket to copy ampcamp features data from " +
+            "(default: ampcamp-data/wikistats_featurized-01)")
+
   (opts, args) = parser.parse_args()
   if len(args) != 2:
     parser.print_help()
     sys.exit(1)
   (action, cluster_name) = args
-  if opts.identity_file == None and action in ['launch', 'login']:
+  if opts.identity_file == None and action in ['launch', 'login', 'start']:
     print >> stderr, ("ERROR: The -i or --identity-file argument is " +
                       "required for " + action)
     sys.exit(1)
   if opts.cluster_type not in ["mesos", "standalone"] and action == "launch":
     print >> stderr, ("ERROR: Invalid cluster type: " + opts.cluster_type)
     sys.exit(1)
-  
+
   # Boto config check
   # http://boto.cloudhackers.com/en/latest/boto_config_tut.html
   home_dir = os.getenv('HOME')
@@ -171,9 +175,9 @@ def is_active(instance):
 # Fails if there already instances running in the cluster's groups.
 def launch_cluster(conn, opts, cluster_name):
   print "Setting up security groups..."
-  master_group = get_or_make_group(conn, "strata-master")
-  slave_group = get_or_make_group(conn, "strata-slaves")
-  zoo_group = get_or_make_group(conn, "strata-zoo")
+  master_group = get_or_make_group(conn, "ampcamp3-master")
+  slave_group = get_or_make_group(conn, "ampcamp3-slaves")
+  zoo_group = get_or_make_group(conn, "ampcamp3-zoo")
   if master_group.rules == []: # Group was just now created
     master_group.authorize(src_group=master_group)
     master_group.authorize(src_group=slave_group)
@@ -183,10 +187,11 @@ def launch_cluster(conn, opts, cluster_name):
     master_group.authorize('tcp', 50030, 50030, '0.0.0.0/0')
     master_group.authorize('tcp', 50070, 50070, '0.0.0.0/0')
     master_group.authorize('tcp', 60070, 60070, '0.0.0.0/0')
+    master_group.authorize('tcp', 33000, 33010, '0.0.0.0/0')
     if opts.cluster_type == "mesos":
       master_group.authorize('tcp', 38090, 38090, '0.0.0.0/0')
     if opts.ganglia:
-      master_group.authorize('tcp', 80, 80, '0.0.0.0/0')
+      master_group.authorize('tcp', 5080, 5080, '0.0.0.0/0')
   if slave_group.rules == []: # Group was just now created
     slave_group.authorize(src_group=master_group)
     slave_group.authorize(src_group=slave_group)
@@ -262,7 +267,7 @@ def launch_cluster(conn, opts, cluster_name):
           block_device_map = block_map)
       my_req_ids += [req.id for req in slave_reqs]
       i += 1
-    
+
     print "Waiting for spot instances to be granted..."
     try:
       while True:
@@ -339,7 +344,7 @@ def launch_cluster(conn, opts, cluster_name):
   tags['type'] = 'slave'
   for node in slave_nodes:
     conn.create_tags([node.id], tags)
-  
+
   tags['type'] = 'master'
   for node in master_nodes:
     conn.create_tags([node.id], tags)
@@ -408,7 +413,8 @@ def setup_cluster(conn, master_nodes, slave_nodes, zoo_nodes, opts, deploy_ssh_k
 
   # NOTE: We should clone the repository before running deploy_files to
   # prevent ec2-variables.sh from being overwritten
-  ssh(master, opts, "rm -rf spark-ec2 && git clone -b training https://github.com/shivaram/spark-ec2.git")
+  ssh(master, opts,
+      "rm -rf spark-ec2 && git clone -b ampcamp3 https://github.com/shivaram/spark-ec2.git")
 
   print "Deploying files to master..."
   deploy_files(conn, "deploy.generic", opts, master_nodes, slave_nodes,
@@ -430,19 +436,19 @@ def check_spark_json(spark_json, opts):
   ## Find expected number of CPUs
   num_cpus_per_slave = get_num_cpus(opts.instance_type)
   expected_num_cpus = num_cpus_per_slave * opts.slaves
-  
+
   print "Spark master reports " + str(got_num_cpus) + " CPUs, expected " + str(expected_num_cpus)
-  
+
   # TODO(shivaram): Should we check amount of memory as well ?
 
   if int(got_num_cpus) == int(expected_num_cpus):
     return 0
-  else: 
+  else:
     return -1
 
 def check_spark_cluster(master_nodes, opts):
   master = master_nodes[0].public_dns_name
-  url = "http://" + master + ":8080?format=json"
+  url = "http://" + master + ":8080/json"
   try:
     response = urllib2.urlopen(url)
     if response.code != 200:
@@ -455,7 +461,20 @@ def check_spark_cluster(master_nodes, opts):
     print "Exception in opening the url " + url
     return -1
 
-def copy_ampcamp_data(master_nodes, opts):
+def copy_ampcamp_data_from_ebs(master_nodes, opts):
+  master = master_nodes[0].public_dns_name
+
+  print "Copying AMP Camp Wikipedia pagecount data..."
+  ssh(master, opts,
+      "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/pagecounts /wiki/pagecounts")
+  print "Copying AMP Camp Wikipedia featurized data..."
+  ssh(master, opts,
+      "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/wikistats_featurized /")
+  print "Copying AMP Camp Wikipedia articles data..."
+  ssh(master, opts,
+      "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/enwiki_txt /")
+
+def copy_ampcamp_data_from_s3(master_nodes, opts):
   master = master_nodes[0].public_dns_name
 
   ssh(master, opts, "/root/ephemeral-hdfs/bin/stop-mapred.sh")
@@ -465,7 +484,7 @@ def copy_ampcamp_data(master_nodes, opts):
   ssh(master, opts, "/root/ephemeral-hdfs/bin/start-mapred.sh")
   # Wait for mapred to start
   time.sleep(10)
-  
+
   (s3_access_key, s3_secret_key) = get_s3_keys()
 
   # Escape '/' in S3-keys
@@ -483,15 +502,18 @@ def copy_ampcamp_data(master_nodes, opts):
 
   if (opts.s3_stats_bucket == "default"):
     s3_buckets_range = range(1, 9)
-    opts.s3_stats_bucket = "ampcamp-data/wikistats_20090505-0" + str(random.choice(s3_buckets_range))
+    opts.s3_stats_bucket = "ampcamp-data/wikistats_20090505-0" + \
+        str(random.choice(s3_buckets_range))
 
   if (opts.s3_small_bucket == "default"):
     s3_buckets_range = range(1, 9)
-    opts.s3_small_bucket = "ampcamp-data/wikistats_20090505_restricted-0" + str(random.choice(s3_buckets_range))
+    opts.s3_small_bucket = "ampcamp-data/wikistats_20090505_restricted-0" + \
+        str(random.choice(s3_buckets_range))
 
   if (opts.s3_features_bucket == "default"):
     s3_buckets_range = range(1, 9)
-    opts.s3_features_bucket = "ampcamp-data/wikistats_featurized-0" + str(random.choice(s3_buckets_range))
+    opts.s3_features_bucket = "ampcamp-data/wikistats_featurized-0" + \
+        str(random.choice(s3_buckets_range))
 
   set_s3_keys_in_hdfs(master, opts, s3_access_key, s3_secret_key)
 
@@ -512,9 +534,12 @@ def copy_ampcamp_data(master_nodes, opts):
 def set_s3_keys_in_hdfs(master, opts, s3_access_key, s3_secret_key):
   ssh(master, opts, "cd ephemeral-hdfs/conf; sed -i \"s/\!-- p/p/g\" core-site.xml")
   ssh(master, opts, "cd ephemeral-hdfs/conf; sed -i \"s/y --/y/g\" core-site.xml")
-  ssh(master, opts, "cd ephemeral-hdfs/conf; sed -i \"/fs.s3n.awsAccessKeyId/{N; s/value>.*<\/value/value>" + s3_access_key.replace("/", "\/") + "<\/value/g }\" core-site.xml")
-  ssh(master, opts, "cd ephemeral-hdfs/conf; sed -i \"/fs.s3n.awsSecretAccessKey/{N; s/value>.*<\/value/value>" + s3_secret_key.replace("/", "\/") + "<\/value/g }\" core-site.xml")
-
+  ssh(master, opts, "cd ephemeral-hdfs/conf; " + \
+      "sed -i \"/fs.s3n.awsAccessKeyId/{N; s/value>.*<\/value/value>" + \
+      s3_access_key.replace("/", "\/") + "<\/value/g }\" core-site.xml")
+  ssh(master, opts, "cd ephemeral-hdfs/conf; " + \
+      "sed -i \"/fs.s3n.awsSecretAccessKey/{N; s/value>.*<\/value/value>" + \
+      s3_secret_key.replace("/", "\/") + "<\/value/g }\" core-site.xml")
 
 def get_s3_keys():
   if os.getenv('S3_AWS_ACCESS_KEY_ID') != None:
@@ -653,7 +678,7 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, zoo_nodes,
               dest.write(text)
               dest.close()
   # rsync the whole directory over to the master machine
-  command = (("rsync -rv -e 'ssh -o StrictHostKeyChecking=no -i %s' " + 
+  command = (("rsync -rv -e 'ssh -o StrictHostKeyChecking=no -i %s' " +
       "'%s/' '%s@%s:/'") % (opts.identity_file, tmp_dir, opts.user, active_master))
   subprocess.check_call(command, shell=True)
   # Remove the temp directory we created above
@@ -669,10 +694,18 @@ def scp(host, opts, local_file, dest_file):
 
 # Run a command on a host through ssh, throwing an exception if ssh fails
 def ssh(host, opts, command):
-  subprocess.check_call(
-      "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" %
-      (opts.identity_file, opts.user, host, command), shell=True)
-
+  tries = 0
+  while True:
+    try:
+      return subprocess.check_call(
+        "ssh -t -o StrictHostKeyChecking=no -i %s %s@%s '%s'" %
+        (opts.identity_file, opts.user, host, command), shell=True)
+    except subprocess.CalledProcessError as e:
+      if (tries > 2):
+        raise e
+      print "Error connecting to host {0}, sleeping 30".format(e)
+      time.sleep(30)
+      tries = tries + 1
 
 # Gets a list of zones to launch instances in
 def get_zones(conn, opts):
@@ -730,8 +763,10 @@ def main():
       print >> stderr, "ERROR: Cluster health check failed for spark_ec2"
       sys.exit(1)
     if opts.copy:
-      copy_ampcamp_data(master_nodes, opts)
-    print >>stderr, ("SUCCESS: Cluster successfully launched! You can login to the master at " + master_nodes[0].public_dns_name)
+      print >>stderr, "AMP Camp 3 data copy not implemented yet !"
+      # copy_ampcamp_data(master_nodes, opts)
+    print >>stderr, "SUCCESS: Cluster successfully launched! " + \
+      "You can login to the master at " + master_nodes[0].public_dns_name
 
   elif action == "destroy":
     response = raw_input("Are you sure you want to destroy the cluster " +
@@ -750,12 +785,12 @@ def main():
         print "Terminating zoo..."
         for inst in zoo_nodes:
           inst.terminate()
-      
+
       # Delete security groups as well
       if opts.delete_groups:
         print "Deleting security groups (this will take some time)..."
         group_names = [cluster_name + "-master", cluster_name + "-slaves", cluster_name + "-zoo"]
-        
+
         attempt = 1;
         while attempt <= 3:
           print "Attempt %d" % attempt
@@ -771,7 +806,7 @@ def main():
                            from_port=rule.from_port,
                            to_port=rule.to_port,
                            src_group=grant)
-          
+
           # Sleep for AWS eventual-consistency to catch up, and for instances
           # to terminate
           time.sleep(30)  # Yes, it does have to be this long :-(
@@ -782,13 +817,13 @@ def main():
             except boto.exception.EC2ResponseError:
               success = False;
               print "Failed to delete security group " + group.name
-          
+
           # Unfortunately, group.revoke() returns True even if a rule was not
           # deleted, so this needs to be rerun if something fails
           if success: break;
-          
+
           attempt += 1
-          
+
         if not success:
           print "Failed to delete all security groups after 3 tries."
           print "Try re-running in a few minutes."
@@ -815,13 +850,14 @@ def main():
     if err != 0:
       print >> stderr, "ERROR: Cluster health check failed for spark_ec2"
       sys.exit(1)
-    copy_ampcamp_data(master_nodes, opts)
-    print >>stderr, ("SUCCESS: Data copied successfully! You can login to the master at " + master_nodes[0].public_dns_name)
+    copy_ampcamp_data_from_ebs(master_nodes, opts)
+    print >>stderr, "SUCCESS: Data copied successfully! " + \
+        "You can login to the master at " + master_nodes[0].public_dns_name
 
   elif action == "stop":
     response = raw_input("Are you sure you want to stop the cluster " +
         cluster_name + "?\nDATA ON EPHEMERAL DISKS WILL BE LOST, " +
-        "BUT THE CLUSTER WILL KEEP USING SPACE ON\n" + 
+        "BUT THE CLUSTER WILL KEEP USING SPACE ON\n" +
         "AMAZON EBS IF IT IS EBS-BACKED!!\n" +
         "Stop cluster " + cluster_name + " (y/N): ")
     if response == "y":
@@ -866,7 +902,8 @@ def main():
       sys.exit(1)
     if opts.copy:
       copy_ampcamp_data(master_nodes, opts)
-    print >>stderr, ("SUCCESS: Cluster successfully launched! You can login to the master at " + master_nodes[0].public_dns_name)
+    print >>stderr, "SUCCESS: Cluster successfully launched! " + \
+        "You can login to the master at " + master_nodes[0].public_dns_name
 
   else:
     print >> stderr, "Invalid action: %s" % action
