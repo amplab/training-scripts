@@ -763,8 +763,7 @@ def main():
       print >> stderr, "ERROR: Cluster health check failed for spark_ec2"
       sys.exit(1)
     if opts.copy:
-      print >>stderr, "AMP Camp 3 data copy not implemented yet !"
-      # copy_ampcamp_data(master_nodes, opts)
+      copy_ampcamp_data_from_ebs(master_nodes, opts)
     print >>stderr, "SUCCESS: Cluster successfully launched! " + \
       "You can login to the master at " + master_nodes[0].public_dns_name
 
@@ -901,7 +900,7 @@ def main():
       print >> stderr, "ERROR: Cluster health check failed for spark_ec2"
       sys.exit(1)
     if opts.copy:
-      copy_ampcamp_data(master_nodes, opts)
+      copy_ampcamp_data_from_ebs(master_nodes, opts)
     print >>stderr, "SUCCESS: Cluster successfully launched! " + \
         "You can login to the master at " + master_nodes[0].public_dns_name
 
