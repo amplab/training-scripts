@@ -414,7 +414,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, zoo_nodes, opts, deploy_ssh_k
   # NOTE: We should clone the repository before running deploy_files to
   # prevent ec2-variables.sh from being overwritten
   ssh(master, opts,
-      "rm -rf spark-ec2 && git clone -b ampcamp3 https://github.com/shivaram/spark-ec2.git")
+      "rm -rf spark-ec2 && git clone -b ampcamp3 https://github.com/mesos/spark-ec2.git")
 
   print "Deploying files to master..."
   deploy_files(conn, "deploy.generic", opts, master_nodes, slave_nodes,
