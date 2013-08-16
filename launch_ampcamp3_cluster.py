@@ -62,7 +62,6 @@ def parse_args():
 
 def main():
   (opts, spark_script_path) = parse_args()
-  s3_buckets = range(1, opts.buckets + 1)
   availability_zones = ["us-east-1b", "us-east-1d", "us-east-1a"]
   subprocesses = []
   cluster_names = []
@@ -86,6 +85,7 @@ def main():
     args.append('-z')
     args.append(availability_zones[cluster % len(availability_zones)])
 
+#  s3_buckets = range(1, opts.buckets + 1)
 #  args.append('--s3-stats-bucket')
 #  args.append(opts.s3_stats_bucket + str(s3_buckets[cluster%len(s3_buckets)]))
 #  args.append('--s3-small-bucket')
