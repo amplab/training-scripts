@@ -98,7 +98,7 @@ def main():
 
     args.append(opts.action)
 
-    cluster_name = 'ampcamp3' + str(cluster)
+    cluster_name = 'ampcamp3-dryrun' + str(cluster)
     args.append(cluster_name)
 
     print "Launching " + cluster_name
