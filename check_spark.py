@@ -39,7 +39,7 @@ def check_all_masters():
 def check_spark_master(master_hostname):
   #url = "http://" + master + ":8080"
   master_url = "http://" + master_hostname + ":8080"
-  url = master_url + "?format=json"
+  url = master_url + "/json"
   response = urllib2.urlopen(url, timeout=30)
   if response.code != 200:
     print("Spark master " + url + " returned " + str(response.code))
