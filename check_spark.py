@@ -27,7 +27,7 @@ def check_all_masters():
   masters = [i for i in res if len(i.instances) == 1]
   master_instances = [m.instances[0] for m in masters if is_active(m.instances[0])]
 
-  name_host = [(m.tags['cluster'], m.public_dns_name) for m in master_instances]
+  name_host = [(m.tags['cluster'], m.public_dns_name) for m in master_instances if 'cluster' in m.tags]
   
   for (name, host) in name_host:
     print(name + " " + host, end=' ')
