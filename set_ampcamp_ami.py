@@ -22,6 +22,7 @@ def set_s3_kv(bucket, key, value):
   s3_key = s3_bucket.get_key(key)
   old_value = s3_key.get_contents_as_string()
   s3_key.set_contents_from_string(value)
+  s3_key.set_acl('public-read')
   new_value = s3_key.get_contents_as_string()
   print "Changed value of " + key + " from " + old_value + " to " + new_value
 
