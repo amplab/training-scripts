@@ -109,6 +109,11 @@ def parse_args():
       help="S3 bucket to copy ampcamp features data from " +
             "(default: ampcamp-data/wikistats_featurized-01)")
 
+  parser.add_option("--destroy-noprompt", action="store_true", default=False,
+      help="Disable prompt confirmation for destroy. ONLY do this if you " +
+           "are sure you want to destroy a cluster (default: false)")
+
+
   (opts, args) = parser.parse_args()
   if len(args) != 2:
     parser.print_help()
@@ -769,9 +774,13 @@ def main():
       "You can login to the master at " + master_nodes[0].public_dns_name
 
   elif action == "destroy":
-    response = raw_input("Are you sure you want to destroy the cluster " +
-        cluster_name + "?\nALL DATA ON ALL NODES WILL BE LOST!!\n" +
-        "Destroy cluster " + cluster_name + " (y/N): ")
+    if not opts.destroy_noprompt:
+      response = raw_input("Are you sure you want to destroy the cluster " +
+          cluster_name + "?\nALL DATA ON ALL NODES WILL BE LOST!!\n" +
+          "Destroy cluster " + cluster_name + " (y/N): ")
+    else:
+      response = "y"
+
     if response == "y":
       (master_nodes, slave_nodes, zoo_nodes) = get_existing_cluster(
           conn, opts, cluster_name, die_on_error=False)
