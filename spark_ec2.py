@@ -83,9 +83,6 @@ def parse_args():
   parser.add_option("--spot-price", metavar="PRICE", type="float",
       help="If specified, launch slaves as spot instances with the given " +
             "maximum price (in dollars)")
-  parser.add_option("-c", "--cluster-type", default="standalone",
-      help="'mesos' for a mesos cluster, 'standalone' for a standalone " +
-           "spark cluster (default: mesos)")
   parser.add_option("-g", "--ganglia", action="store_true", default=True,
       help="Setup ganglia monitoring for the cluster. NOTE: The ganglia " +
       "monitoring page will be publicly accessible")
@@ -122,9 +119,6 @@ def parse_args():
   if opts.identity_file == None and action in ['launch', 'login', 'start']:
     print >> stderr, ("ERROR: The -i or --identity-file argument is " +
                       "required for " + action)
-    sys.exit(1)
-  if opts.cluster_type not in ["mesos", "standalone"] and action == "launch":
-    print >> stderr, ("ERROR: Invalid cluster type: " + opts.cluster_type)
     sys.exit(1)
 
   # Boto config check
@@ -193,9 +187,9 @@ def launch_cluster(conn, opts, cluster_name):
     master_group.authorize('tcp', 50070, 50070, '0.0.0.0/0')
     master_group.authorize('tcp', 60070, 60070, '0.0.0.0/0')
     master_group.authorize('tcp', 33000, 33010, '0.0.0.0/0')
+    master_group.authorize('tcp', 3030, 3040, '0.0.0.0/0')
     master_group.authorize('tcp', 5050, 5050, '0.0.0.0/0')
-    if opts.cluster_type == "mesos":
-      master_group.authorize('tcp', 38090, 38090, '0.0.0.0/0')
+    master_group.authorize('tcp', 38090, 38090, '0.0.0.0/0')
     if opts.ganglia:
       master_group.authorize('tcp', 5080, 5080, '0.0.0.0/0')
   if slave_group.rules == []: # Group was just now created
@@ -409,10 +403,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, zoo_nodes, opts, deploy_ssh_k
     scp(master, opts, opts.identity_file, '~/.ssh/id_rsa')
     ssh(master, opts, 'chmod 600 ~/.ssh/id_rsa')
 
-  if opts.cluster_type == "mesos":
-    modules = ['ephemeral-hdfs', 'persistent-hdfs', 'mesos', 'training']
-  elif opts.cluster_type == "standalone":
-    modules = ['ephemeral-hdfs', 'persistent-hdfs', 'spark-standalone', 'training']
+  modules = ['ephemeral-hdfs', 'persistent-hdfs', 'mesos', 'spark-standalone', 'training']
 
   if opts.ganglia:
     modules.append('ganglia')
@@ -643,10 +634,7 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, zoo_nodes,
     zoo_list = '\n'.join([i.public_dns_name for i in zoo_nodes])
     cluster_url = "zoo://" + ",".join(
         ["%s:2181/mesos" % i.public_dns_name for i in zoo_nodes])
-  elif opts.cluster_type == "mesos":
-    zoo_list = "NONE"
-    cluster_url = "%s:5050" % active_master
-  elif opts.cluster_type == "standalone":
+  else:
     zoo_list = "NONE"
     cluster_url = "%s:7077" % active_master
 
