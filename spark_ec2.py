@@ -189,6 +189,7 @@ def launch_cluster(conn, opts, cluster_name):
     master_group.authorize('tcp', 33000, 33010, '0.0.0.0/0')
     master_group.authorize('tcp', 3030, 3040, '0.0.0.0/0')
     master_group.authorize('tcp', 5050, 5050, '0.0.0.0/0')
+    master_group.authorize('tcp', 5051, 5051, '0.0.0.0/0')
     master_group.authorize('tcp', 38090, 38090, '0.0.0.0/0')
     if opts.ganglia:
       master_group.authorize('tcp', 5080, 5080, '0.0.0.0/0')
