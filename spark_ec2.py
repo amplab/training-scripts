@@ -753,10 +753,10 @@ def main():
       wait_for_cluster(conn, opts.wait, master_nodes, slave_nodes, zoo_nodes)
     setup_cluster(conn, master_nodes, slave_nodes, zoo_nodes, opts, True)
     print "Waiting for cluster to start..."
-    #err = wait_for_spark_cluster(master_nodes, opts)
-    #if err != 0:
-    #  print >> stderr, "ERROR: Cluster health check failed for spark_ec2"
-    #  sys.exit(1)
+    err = wait_for_spark_cluster(master_nodes, opts)
+    if err != 0:
+      print >> stderr, "ERROR: Cluster health check failed for spark_ec2"
+      sys.exit(1)
     if opts.copy:
       copy_ampcamp_data_from_ebs(master_nodes, opts)
     print >>stderr, "SUCCESS: Cluster successfully launched! " + \
@@ -843,11 +843,11 @@ def main():
 
   elif action == "copy-data":
     (master_nodes, slave_nodes, zoo_nodes) = get_existing_cluster(conn, opts, cluster_name)
-    #print "Waiting for cluster to start..."
-    #err = wait_for_spark_cluster(master_nodes, opts)
-    #if err != 0:
-    #  print >> stderr, "ERROR: Cluster health check failed for spark_ec2"
-    #  sys.exit(1)
+    print "Waiting for cluster to start..."
+    err = wait_for_spark_cluster(master_nodes, opts)
+    if err != 0:
+      print >> stderr, "ERROR: Cluster health check failed for spark_ec2"
+      sys.exit(1)
     copy_ampcamp_data_from_ebs(master_nodes, opts)
     print >>stderr, "SUCCESS: Data copied successfully! " + \
         "You can login to the master at " + master_nodes[0].public_dns_name
@@ -893,11 +893,11 @@ def main():
           inst.start()
     wait_for_cluster(conn, opts.wait, master_nodes, slave_nodes, zoo_nodes)
     setup_cluster(conn, master_nodes, slave_nodes, zoo_nodes, opts, False)
-    #print "Waiting for cluster to start..."
-    #err = wait_for_spark_cluster(master_nodes, opts)
-    #if err != 0:
-    #  print >> stderr, "ERROR: Cluster health check failed for spark_ec2"
-    #  sys.exit(1)
+    print "Waiting for cluster to start..."
+    err = wait_for_spark_cluster(master_nodes, opts)
+    if err != 0:
+      print >> stderr, "ERROR: Cluster health check failed for spark_ec2"
+      sys.exit(1)
     if opts.copy:
       copy_ampcamp_data_from_ebs(master_nodes, opts)
     print >>stderr, "SUCCESS: Cluster successfully launched! " + \
