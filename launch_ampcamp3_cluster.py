@@ -4,6 +4,7 @@
 import logging
 import subprocess
 import sys
+import time
 
 from optparse import OptionParser
 from sys import stderr
@@ -16,20 +17,6 @@ def parse_args():
       help="Start index from which cluster names are generated (useful for debugging)")
   parser.add_option("-n", "--clusters", type="int", default=1,
       help="Number of clusters to launch (default: 1)")
-# parser.add_option("-b", "--buckets", type="int", default=1,
-#     help="number of s3 bucket clones (default: 1)")
-# parser.add_option("--s3-stats-bucket", default="ampcamp-data/wikistats_20090505-0",
-#     help="base-name of S3 bucket to copy ampcamp3 data from. The bucket number " +
-#          " will be appended at the end to form the complete s3 key " +
-#          " (default: ampcamp-data/wikistats_20090505-0)")
-# 
-# parser.add_option("--s3-small-bucket", default="ampcamp-data/wikistats_20090505_restricted-0",
-#     help="base-name of S3 bucket to copy restricted ampcamp3 data from. The bucket number " +
-#          " will be appended at the end to form the complete s3 key " +
-#          " (default: ampcamp-data/wikistats_20090505_restricted-0)")
-# 
-# parser.add_option("--s3-features-bucket", default="ampcamp-data/wikistats_featurized-0",
-#     help="base-name of S3 bucket to copy ampcamp features data from (default: ampcamp-data/wikistats_featurized-01)")
 
   parser.add_option("-p", "--parallel", type="int", default=1,
       help="Number of launches that will happen in parallel (default: 1)")
@@ -47,6 +34,11 @@ def parse_args():
   parser.add_option("-t", "--instance-type", default="m1.xlarge",
       help="Type of instance to launch (default: m1.xlarge). " +
            "WARNING: must be 64-bit; small instances won't work")
+
+  parser.add_option("-w", "--wait", type="int", default=120,
+      help="Seconds to wait for nodes to start (default: 120)")
+  parser.add_option("--stagger", type="int", default=2,
+      help="Seconds to stagger parallel launches (default: 2 seconds)")
 
   parser.add_option("--action", default="launch",
       help="Action to be used while calling spark-ec2 (default: launch)")
@@ -67,6 +59,9 @@ def main():
   cluster_names = []
 
   for cluster in range(opts.start_clusters, opts.start_clusters + opts.clusters):
+    # Sleep for `stagger` seconds
+    time.sleep(opts.stagger)
+
     # Launch a cluster
     args = []
     args.append(spark_script_path)
@@ -81,17 +76,12 @@ def main():
     args.append(str(opts.slaves))
     args.append('-t')
     args.append(opts.instance_type)
+    args.append('-w')
+    args.append(opts.wait)
 
-    args.append('-z')
-    args.append(availability_zones[cluster % len(availability_zones)])
-
-#  s3_buckets = range(1, opts.buckets + 1)
-#  args.append('--s3-stats-bucket')
-#  args.append(opts.s3_stats_bucket + str(s3_buckets[cluster%len(s3_buckets)]))
-#  args.append('--s3-small-bucket')
-#  args.append(opts.s3_small_bucket + str(s3_buckets[cluster%len(s3_buckets)]))
-#  args.append('--s3-features-bucket')
-#  args.append(opts.s3_features_bucket + str(s3_buckets[cluster%len(s3_buckets)]))
+#   NOTE(shivaram): Don't pass availability zone as EC2 will pick one on its own
+#   args.append('-z')
+#   args.append(availability_zones[cluster % len(availability_zones)])
 
     if opts.copy:
       args.append('--copy')
