@@ -338,6 +338,8 @@ def launch_cluster(conn, opts, cluster_name):
   master_nodes = master_res.instances
   print "Launched master in %s, regid = %s" % (zone, master_res.id)
 
+  time.sleep(20)
+
   # Create the right tags
   tags = {}
   tags['cluster'] = cluster_name
