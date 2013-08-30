@@ -80,8 +80,8 @@ def main():
     args.append(str(opts.wait))
 
 #   NOTE(shivaram): Don't pass availability zone as EC2 will pick one on its own
-#   args.append('-z')
-#   args.append(availability_zones[cluster % len(availability_zones)])
+    args.append('-z')
+    args.append(availability_zones[cluster % len(availability_zones)])
 
     if opts.copy:
       args.append('--copy')
