@@ -1,0 +1,7 @@
+#!/bin/bash
+
+PYTHONPATH="./third_party/boto-2.4.1.zip/boto-2.4.1:$PYTHONPATH" python -c \
+"import boto; "\
+"from boto import *;"\
+"conn = connect_ec2();"\
+"print [k.name for k in conn.get_all_key_pairs()]"
