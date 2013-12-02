@@ -34,6 +34,8 @@ def parse_args():
   parser.add_option("-t", "--instance-type", default="m1.xlarge",
       help="Type of instance to launch (default: m1.xlarge). " +
            "WARNING: must be 64-bit; small instances won't work")
+  parser.add_option("-r", "--region", default="us-east-1",
+      help="EC2 region zone to launch instances in")
 
   parser.add_option("-w", "--wait", type="int", default=120,
       help="Seconds to wait for nodes to start (default: 120)")
@@ -54,7 +56,6 @@ def parse_args():
 
 def main():
   (opts, spark_script_path) = parse_args()
-  availability_zones = ["us-east-1b", "us-east-1d", "us-east-1a"]
   subprocesses = []
   cluster_names = []
 
@@ -79,9 +80,8 @@ def main():
     args.append('-w')
     args.append(str(opts.wait))
 
-#   NOTE(shivaram): Don't pass availability zone as EC2 will pick one on its own
-    args.append('-z')
-    args.append(availability_zones[cluster % len(availability_zones)])
+    args.append('-r')
+    args.append(opts.region)
 
     if opts.copy:
       args.append('--copy')
