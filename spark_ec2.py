@@ -456,8 +456,11 @@ def check_spark_cluster(master_nodes, opts):
       return -1
     master_html = response.read()
     return check_spark_json(master_html, opts)
+  # If we get an exception, return error
   except NameError as e:
-    # If we get an exception, return error
+    print "Exception in opening the url " + url
+    return -1
+  except urllib2.URLError as e:
     print "Exception in opening the url " + url
     return -1
 
