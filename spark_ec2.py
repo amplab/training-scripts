@@ -729,8 +729,8 @@ def wait_for_spark_cluster(master_nodes, opts):
   count = 0
   while err != 0 and count < 10:
     # try to restart spark
-    ssh(master, opts, '/root/spark/bin/stop-all.sh')
-    ssh(master, opts, '/root/spark/bin/start-all.sh')
+    ssh(master, opts, '/root/spark/sbin/stop-all.sh')
+    ssh(master, opts, '/root/spark/sbin/start-all.sh')
     time.sleep(5)
     err = check_spark_cluster(master_nodes, opts)
     count = count + 1
