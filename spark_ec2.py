@@ -8,9 +8,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -190,6 +190,7 @@ def launch_cluster(conn, opts, cluster_name):
     master_group.authorize('tcp', 4040, 4050, '0.0.0.0/0')
     master_group.authorize('tcp', 5050, 5050, '0.0.0.0/0')
     master_group.authorize('tcp', 38090, 38090, '0.0.0.0/0')
+    master_group.authorize('tcp', 19999, 19999, '0.0.0.0/0')
     if opts.ganglia:
       master_group.authorize('tcp', 5080, 5080, '0.0.0.0/0')
   if slave_group.rules == []: # Group was just now created
@@ -406,7 +407,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, zoo_nodes, opts, deploy_ssh_k
     scp(master, opts, opts.identity_file, '~/.ssh/id_rsa')
     ssh(master, opts, 'chmod 600 ~/.ssh/id_rsa')
 
-  modules = ['ephemeral-hdfs', 'persistent-hdfs', 'mesos', 'spark-standalone', 'training']
+  modules = ['ephemeral-hdfs', 'persistent-hdfs', 'mesos', 'spark-standalone', 'tachyon', 'training']
 
   if opts.ganglia:
     modules.append('ganglia')
