@@ -407,7 +407,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, zoo_nodes, opts, deploy_ssh_k
     scp(master, opts, opts.identity_file, '~/.ssh/id_rsa')
     ssh(master, opts, 'chmod 600 ~/.ssh/id_rsa')
 
-  modules = ['ephemeral-hdfs', 'persistent-hdfs', 'mesos', 'spark-standalone', 'tachyon', 'training']
+  modules = ['ephemeral-hdfs', 'persistent-hdfs', 'mesos', 'spark-standalone', 'training']
 
   if opts.ganglia:
     modules.append('ganglia')
@@ -480,6 +480,9 @@ def copy_ampcamp_data_from_ebs(master_nodes, opts):
   print "Copying AMP Camp Wikipedia graph data..."
   ssh(master, opts,
       "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/wiki_links /wiki_links")
+  print "Copying AMP Camp MovieLens data..."
+  ssh(master, opts,
+      "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/movielens /movielens")
 
 def copy_ampcamp_data_from_s3(master_nodes, opts):
   master = master_nodes[0].public_dns_name
