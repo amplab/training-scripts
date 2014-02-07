@@ -407,7 +407,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, zoo_nodes, opts, deploy_ssh_k
     scp(master, opts, opts.identity_file, '~/.ssh/id_rsa')
     ssh(master, opts, 'chmod 600 ~/.ssh/id_rsa')
 
-  modules = ['ephemeral-hdfs', 'persistent-hdfs', 'mesos', 'spark-standalone', 'training']
+  modules = ['ephemeral-hdfs', 'persistent-hdfs', 'mesos', 'spark-standalone', 'training', 'tachyon']
 
   if opts.ganglia:
     modules.append('ganglia')
