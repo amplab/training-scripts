@@ -468,6 +468,12 @@ def check_spark_cluster(master_nodes, opts):
 def copy_ampcamp_data_from_ebs(master_nodes, opts):
   master = master_nodes[0].public_dns_name
 
+  print "Copying AMP Camp MovieLens data..."
+  ssh(master, opts,
+      "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/movielens /movielens")
+  print "Copying AMP Camp Wikipedia graph data..."
+  ssh(master, opts,
+      "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/wiki_links /wiki_links")
   print "Copying AMP Camp Wikipedia pagecount data..."
   ssh(master, opts,
       "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/pagecounts /wiki/pagecounts")
@@ -477,12 +483,6 @@ def copy_ampcamp_data_from_ebs(master_nodes, opts):
 #  print "Copying AMP Camp Wikipedia articles data..."
 #  ssh(master, opts,
 #      "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/enwiki_txt /")
-  print "Copying AMP Camp Wikipedia graph data..."
-  ssh(master, opts,
-      "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/wiki_links /wiki_links")
-  print "Copying AMP Camp MovieLens data..."
-  ssh(master, opts,
-      "/root/ephemeral-hdfs/bin/hadoop fs -copyFromLocal /ampcamp-data/movielens /movielens")
 
 def copy_ampcamp_data_from_s3(master_nodes, opts):
   master = master_nodes[0].public_dns_name
