@@ -10,7 +10,7 @@ from optparse import OptionParser
 from sys import stderr
 
 def parse_args():
-  parser = OptionParser(usage="launch_ampcamp3_cluster [options] <path_to spark-ec2>",
+  parser = OptionParser(usage="launch_ampcamp4_cluster [options] <path_to spark-ec2>",
       add_help_option=True)
 
   parser.add_option("--start-clusters", type="int", default=1,
@@ -30,7 +30,7 @@ def parse_args():
       help="SSH private key file to use for logging into instances")
   parser.add_option("-a", "--ami", default="latest",
       help="Amazon Machine Image ID to use, or 'latest' to use latest " +
-           "availabe ampcamp3 AMI")
+           "availabe ampcamp4 AMI")
   parser.add_option("-t", "--instance-type", default="m1.xlarge",
       help="Type of instance to launch (default: m1.xlarge). " +
            "WARNING: must be 64-bit; small instances won't work")
@@ -88,7 +88,7 @@ def main():
 
     args.append(opts.action)
 
-    cluster_name = 'ampcamp3-dryrun' + str(cluster)
+    cluster_name = 'ampcamp4' + str(cluster)
     args.append(cluster_name)
 
     print "Launching " + cluster_name
